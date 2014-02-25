@@ -1337,25 +1337,27 @@ module ActiveResource
       attributes = Formats.remove_root(attributes) if remove_root
 
       attributes.each do |key, value|
-        @attributes[key.to_s] =
-          case value
-            when Array
-              resource = nil
-              value.map do |attrs|
-                if attrs.is_a?(Hash)
-                  resource ||= find_or_create_resource_for_collection(key)
-                  resource.new(attrs, persisted)
-                else
-                  attrs.duplicable? ? attrs.dup : attrs
-                end
+        parsed_value = case value
+          when Array
+            resource = nil
+            value.map do |attrs|
+              if attrs.is_a?(Hash)
+                resource ||= find_or_create_resource_for_collection(key)
+                resource.new(attrs, persisted)
+              else
+                attrs.duplicable? ? attrs.dup : attrs
               end
-            when Hash
-              resource = find_or_create_resource_for(key)
-              resource.new(value, persisted)
-            else
-              value.duplicable? ? value.dup : value
-          end
+            end
+          when Hash
+            resource = find_or_create_resource_for(key)
+            resource.new(value, persisted)
+          else
+            value.duplicable? ? value.dup : value
+        end
+
+        self.send(:"#{key.to_s}=", parsed_value)
       end
+
       self
     end
 
