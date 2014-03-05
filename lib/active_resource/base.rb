@@ -636,6 +636,19 @@ module ActiveResource
         end
       end
 
+      # Sets the naming convention. Can be :as_is (no modification), :camel_case, :underscore, :mixed (Mixed_Variable_Naming_Convention)
+      def api_naming_convention
+        if defined?(@api_naming_convention)
+          @api_naming_convention
+        elsif superclass != Object && superclass.api_naming_convention
+          superclass.api_naming_convention
+        end
+      end
+
+      def api_naming_convention= (value = :as_is)
+        @api_naming_convention = value
+      end
+
       # Gets the \prefix for a resource's nested URL (e.g., <tt>prefix/collectionname/1.json</tt>)
       # This method is regenerated at runtime based on what the \prefix is set to.
       def prefix(options={})
@@ -1021,7 +1034,21 @@ module ActiveResource
 
         # Builds the query string for the request.
         def query_string(options)
+          options = apply_api_naming_convention(options)
           "?#{options.to_query}" unless options.nil? || options.empty?
+        end
+
+        def apply_api_naming_convention(options)
+          if api_naming_convention
+            param_array = options.map do |k, v|
+              k = api_naming_convention.call(k)
+              [k, v]
+            end
+
+            options = Hash[param_array]
+          end
+          puts options.inspect
+          options
         end
 
         # split an option hash into two hashes, one containing the prefix options,
@@ -1287,7 +1314,11 @@ module ActiveResource
     # serialization format specified in ActiveResource::Base.format. The options
     # applicable depend on the configured encoding format.
     def encode(options={})
-      send("to_#{self.class.format.extension}", options)
+      if(self.class.format)
+        self.class.format.encode(self)
+      else
+        send("to_#{self.class.format.extension}", options)
+      end
     end
 
     # A method to \reload the attributes of this object from the remote web service.
