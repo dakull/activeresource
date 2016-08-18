@@ -1047,7 +1047,7 @@ module ActiveResource
 
             options = Hash[param_array]
           end
-          puts options.inspect
+
           options
         end
 
